@@ -16,7 +16,9 @@
 
 #define MAX_FD 65535            //最大客户端数量
 #define MAX_EVENT_NUMBER 10000  //监听的最大的事件数量
+#define TIMESLOT 5              //定时器周期
 
+static int pipefd[2];
 
 /*
     函数功能：添加信号捕捉

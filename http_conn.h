@@ -20,6 +20,12 @@
 #include <errno.h>
 #include "locker.h"
 #include <sys/uio.h>
+#include "lst_timer.h"
+
+//类申明 位于lst_timer.cpp
+class sort_timer_lst;
+class util_timer;
+
 
 
 class http_conn{
@@ -31,6 +37,11 @@ public:
     static const int READ_BUFFER_SIZE = 2048;   //读缓冲区的大小
     static const int WRITE_BUFFER_SIZE = 1024;  //写缓冲区大小
     static const int FILENAME_LEN = 200;        //文件名的最大长度
+    static int m_request_cnt;   // 接收到的请求次数
+    
+    util_timer * timer;                 //定时器
+    static sort_timer_lst m_timer_lst;  //定时器链表
+public:
 
     /*********************状态机 状态定义************************************************/
     // HTTP请求方法，这里只支持GET
@@ -116,7 +127,7 @@ private:
     char * get_line(){ return m_read_buf + m_start_line; }
 
 
-    const char * doc_root = "/home/void/Documents/C++_webServer/webserver/resources";
+    
     struct stat m_file_stat;                //目标文件的状态，以判断文件是否存在、是否为目录、是否可读，并获取文件大小等信息
     struct iovec m_iv[2];       
     int m_iv_count;             

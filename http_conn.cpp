@@ -1,9 +1,13 @@
 #include "http_conn.h"
 
-// 所有的客户数
-int http_conn::m_user_count = 0;
-// 所有socket上的事件都被注册到同一个epoll内核事件中，所以设置成静态的
+
+sort_timer_lst http_conn::m_timer_lst;
+const char * doc_root = "/home/void/Documents/C++_webServer/webserver/resources";
+
+
+int http_conn::m_user_count = 0;    // 所有的客户数
 int http_conn::m_epollfd = -1;
+int http_conn::m_request_cnt = 0; 
 
 // 定义HTTP响应的一些状态信息
 const char* ok_200_title = "OK";
