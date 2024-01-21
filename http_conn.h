@@ -26,7 +26,7 @@
 class sort_timer_lst;
 class util_timer;
 
-
+const bool ET = true;       //设置边触发
 
 class http_conn{
 public:

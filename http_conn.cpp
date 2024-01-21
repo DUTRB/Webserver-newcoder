@@ -33,12 +33,20 @@ int setnonblocking(int fd){
 /*
     函数功能：添加文件描述符到epoll中
 */
-void addfd(int epollfd, int fd, bool one_shot){
+void addfd(int epollfd, int fd, bool one_shot, bool et){
     epoll_event event;
     event.data.fd = fd;
-    event.events = EPOLLIN |  EPOLLRDHUP;
-
+    if(et){
+         // 对所有fd设置边沿触发，但是listen_fd不需要，可以另行判断处理
+        event.events = EPOLLIN |  EPOLLRDHUP | EPOLLET;
+    }else{
+        // 默认水平触发, 对端连接断开触发的epoll 事件包含 EPOLLIN | EPOLLRDHUP挂起，
+        // 不用根据返回值判断，直接通过事件判断异常断开
+        event.events = EPOLLIN |  EPOLLRDHUP;
+    }
+    
     if(one_shot){
+        // 注册为 EPOLLONESHOT事件，防止同一个通信被不同的线程处理
         event.events |= EPOLLONESHOT;
     }
     epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &event);
@@ -74,7 +82,7 @@ void http_conn::init(int sockfd, const sockaddr_in & addr){
     setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 
     //添加到epoll对象中
-    addfd(m_epollfd, m_sockfd, true);
+    addfd(m_epollfd, m_sockfd, true, ET);
     m_user_count++;
 
     init();
