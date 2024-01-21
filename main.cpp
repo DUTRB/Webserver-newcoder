@@ -10,6 +10,9 @@
 #include "locker.h"
 #include "threadpool.h"
 #include "http_conn.h"
+#include <assert.h>
+#include "lst_timer.h"
+
 
 #define MAX_FD 65535            //最大客户端数量
 #define MAX_EVENT_NUMBER 10000  //监听的最大的事件数量
@@ -30,6 +33,7 @@ void addsig(int sig, void(handler)(int)){
 extern void addfd(int epollfd, int fd, bool one_shot);  //添加文件描述符到epoll中
 extern void removefd(int epollfd, int fd);              //从epoll中删除文件描述符
 extern void modfd(int epollfd, int fd, int ev);         //修改文件描述符
+extern int setnonblocking(int fd);
 
 /*
     函数功能：主函数体
@@ -41,7 +45,6 @@ int main(int argc, char * argv[]){
         exit(-1);
     }
 
-    
     int port = atoi(argv[1]);               //获取端口号 转换为整数
 
     addsig(SIGPIPE, SIG_IGN);               //对sigpipe信号进行忽略处理
@@ -59,7 +62,7 @@ int main(int argc, char * argv[]){
     /****************网络部分代码*********************/
     //创建监听的套接字
     int listenfd = socket(PF_INET, SOCK_STREAM, 0);
-
+    assert(listenfd >= 0);
     //设置端口复用
     int reuse = 1;
     setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
@@ -69,18 +72,22 @@ int main(int argc, char * argv[]){
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
-    bind(listenfd, (struct sockaddr *)&address, sizeof(address));
+    int ret = bind(listenfd, (struct sockaddr *)&address, sizeof(address));
+    assert(ret != -1);
 
     //监听
-    listen(listenfd, 5);
+    ret = listen(listenfd, 5);
+    assert(ret != -1);
 
     //创建epoll对象，事件数组，添加
     epoll_event events[MAX_EVENT_NUMBER];
     int epollfd = epoll_create(5);
+    assert(epollfd != -1);
 
     //将监听的文件描述符添加到epoll对象中
     addfd(epollfd, listenfd, false);
-    http_conn::m_epollfd = epollfd;
+
+    http_conn::m_epollfd = epollfd; //静态成员 类共享
 
     //主线程循环检测事件发生
     while(true){
